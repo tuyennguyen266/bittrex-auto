@@ -1,6 +1,7 @@
 const bittrex = require('node-bittrex-api');
-const Config = require('./config');
+const config = require('./config');
 const logger = require('./logger');
+const constants = require('./constants');
 
 const API_KEY = process.argv[2];
 const API_SECRET = process.argv[3];
@@ -11,20 +12,13 @@ bittrex.options({
 });
 
 
-const Steps = {
-  START: 0,
-  BOUGHT: 1,
-  BUY_FILLED: 2,
-  TRAILING_STOP: 3,
-  END: 100
-}
-
-var step = Steps.START;
-var stopPrice = Config.trailingStopPrice;
+const Steps = constants.steps;
+var step = config.defaultStep;
+var stopPrice = config.trailingStopPrice;
 
 
 setInterval(() => {
-  bittrex.getticker( { market : Config.market }, function( data, err ) {
+  bittrex.getticker( { market : config.market }, function( data, err ) {
     if (err) {
       logger.error(err);
       return;
@@ -41,7 +35,7 @@ setInterval(() => {
 // ---------------------------------------------------------------------------------------------------------------------
 
 const handleTicker = (lastPrice) => {
-  logger.info('PRICE: ', lastPrice);
+  logger.info(`PRICE: ${lastPrice}`);
   if (shouldBuy()) {
     buy();
     return;
@@ -84,31 +78,31 @@ const shouldMarkBuyFilled = (price) => {
   if (step !== Steps.BOUGHT) {
     return false;
   }
-  return price < Config.buyPrice;
+  return price < config.buyPrice;
 }
 
 const shouldStopLoss = (price) => {
   if (step !== Steps.BUY_FILLED) {
     return false;
   }
-  if (!Config.stopLossPrice) {
+  if (!config.stopLossPrice) {
     return false;
   }
-  return price <= Config.stopLossPrice;
+  return price <= config.stopLossPrice;
 }
 
 const shouldTriggerTrailingStop = (price) => {
   if (step !== Steps.BUY_FILLED) {
     return false;
   }
-  return price >= Config.trailingStopPrice;
+  return price >= config.trailingStopPrice;
 }
 
 const shouldSetNewTrailingStop = (price) => {
   if (step !== Steps.TRAILING_STOP) {
     return false;
   }
-  return price > stopPrice + Config.trailingStopDistance;
+  return price > stopPrice + config.trailingStopDistance;
 }
 
 const shouldTrailingStop = (price) => {
@@ -122,18 +116,18 @@ const shouldSellAll = (price) => {
   if (step !== Steps.TRAILING_STOP) {
     return false;
   }
-  return price >= Config.sellAllPrice;
+  return price >= config.sellAllPrice;
 }
 
 // ---------------------------------------------------------------------------------------------------------------------
 
 const buy = () => {
   const options = {
-    market: Config.market,
-    quantity: Config.amount,
-    rate: Config.buyPrice
+    market: config.market,
+    quantity: config.amount,
+    rate: config.buyPrice
   };
-  logger.info('BUY: ', options);
+  logger.info(`BUY: ${options}`);
   bittrex.buylimit(options, (data, err) => {
     if (err) {
       logger.error(err);
@@ -150,11 +144,11 @@ const markBuyFilled = () => {
 
 const stopLoss = () => {
   const options = {
-    market: Config.market,
-    quantity: Config.amount,
-    rate: Config.stopLossLimitPrice
+    market: config.market,
+    quantity: config.amount,
+    rate: config.stopLossLimitPrice
   }
-  logger.info('STOP LOSS: ', options);
+  logger.info(`STOP LOSS: ${options}`);
   bittrex.selllimit(options, (data, err) => {
     if (err) {
       logger.error(err);
@@ -165,23 +159,23 @@ const stopLoss = () => {
 }
 
 const triggerTrailingStop = (price) => {
-  stopPrice = price - Config.trailingStopDistance;
+  stopPrice = price - config.trailingStopDistance;
   step = Steps.TRAILING_STOP;
   logger.info('TRIGGER TRAILING STOP');
 }
 
 const setNewTrailingStop = (price) => {
-  stopPrice = price - Config.trailingStopDistance;
+  stopPrice = price - config.trailingStopDistance;
   logger.info('SET NEW TRAILING STOP');
 }
 
 const trailingStop = (price) => {
   const options = {
-    market: Config.market,
-    quantity: Config.amount,
-    rate: (stopPrice - Config.trailingStopLimitDistance)
+    market: config.market,
+    quantity: config.amount,
+    rate: (stopPrice - config.trailingStopLimitDistance)
   }
-  logger.info('TRAILING STOP: ', options);
+  logger.info(`TRAILING STOP: ${options}`);
   bittrex.selllimit(options, (data, err) => {
     if (err) {
       logger.error(err);
@@ -193,11 +187,11 @@ const trailingStop = (price) => {
 
 const sellAll = () => {
   const options = {
-    market: Config.market,
-    quantity: Config.amount,
-    rate: Config.sellAllPrice
+    market: config.market,
+    quantity: config.amount,
+    rate: config.sellAllPrice
   }
-  logger.info('SELL ALL: ', options);
+  logger.info(`SELL ALL: ${options}`);
   bittrex.selllimit(options, (data, err) => {
     if (err) {
       logger.error(err);
