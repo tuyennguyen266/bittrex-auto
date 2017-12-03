@@ -128,7 +128,7 @@ const buy = () => {
     quantity: config.amount,
     rate: config.buyPrice
   };
-  logger.info(`BUY: ${options}`);
+  logger.info(`BUY: ${JSON.stringify(options)}`);
   bittrex.buylimit(options, (data, err) => {
     if (err) {
       logger.error(err);
@@ -149,7 +149,7 @@ const stopLoss = () => {
     quantity: config.amount,
     rate: config.stopLossLimitPrice
   }
-  logger.info(`STOP LOSS: ${options}`);
+  logger.info(`STOP LOSS: ${JSON.stringify(options)}`);
   bittrex.selllimit(options, (data, err) => {
     if (err) {
       logger.error(err);
@@ -162,12 +162,12 @@ const stopLoss = () => {
 const triggerTrailingStop = (price) => {
   stopPrice = price - config.trailingStopDistance;
   step = Steps.TRAILING_STOP;
-  logger.info('TRIGGER TRAILING STOP');
+  logger.info(`TRIGGER TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
 const setNewTrailingStop = (price) => {
   stopPrice = price - config.trailingStopDistance;
-  logger.info('SET NEW TRAILING STOP');
+  logger.info(`SET NEW TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
 const trailingStop = (price) => {
@@ -176,7 +176,7 @@ const trailingStop = (price) => {
     quantity: config.amount,
     rate: (stopPrice - config.trailingStopLimitDistance)
   }
-  logger.info(`TRAILING STOP: ${options}`);
+  logger.info(`TRAILING STOP: ${JSON.stringify(options)}`);
   bittrex.selllimit(options, (data, err) => {
     if (err) {
       logger.error(err);
@@ -192,7 +192,7 @@ const sellAll = () => {
     quantity: config.amount,
     rate: config.sellAllPrice
   }
-  logger.info(`SELL ALL: ${options}`);
+  logger.info(`SELL ALL: ${JSON.stringify(options)}`);
   bittrex.selllimit(options, (data, err) => {
     if (err) {
       logger.error(err);
