@@ -75,6 +75,7 @@ const shouldBuy = () => {
 }
 
 const shouldMarkBuyFilled = (price) => {
+  // TODO: should check if order filled to mark it bought. Now use this temporarily.
   if (step !== Steps.BOUGHT) {
     return false;
   }
