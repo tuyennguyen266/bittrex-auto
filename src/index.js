@@ -15,6 +15,7 @@ bittrex.options({
 const Steps = constants.steps;
 var step = config.defaultStep;
 var stopPrice = config.trailingStopPrice;
+var curTrailingStopOrderId = null;
 
 
 setInterval(() => {
@@ -165,42 +166,81 @@ const stopLoss = () => {
 const triggerTrailingStop = (price) => {
   stopPrice = price - config.trailingStopDistance;
   step = Steps.TRAILING_STOP;
+  bookOrderTrailingStop();
   logger.info(`TRIGGER TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
 const setNewTrailingStop = (price) => {
   stopPrice = price - config.trailingStopDistance;
+  cancelOrderTrailingStop(() => {
+    bookOrderTrailingStop();
+  });
   logger.info(`SET NEW TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
 const trailingStop = (price) => {
-  const options = {
-    market: config.market,
-    quantity: config.amount,
-    rate: (stopPrice - config.trailingStopLimitDistance)
-  }
-  logger.info(`TRAILING STOP: ${JSON.stringify(options)}`);
-  bittrex.selllimit(options, (data, err) => {
-    if (err) {
-      logger.error(err);
-      return;
-    }
-    step = Steps.END;
-  })
+  step = Steps.END;
 }
 
 const sellAll = () => {
-  const options = {
-    market: config.market,
-    quantity: config.amount,
-    rate: config.sellAllPrice
+  cancelOrderTrailingStop(() => {
+    const options = {
+      market: config.market,
+      quantity: config.amount,
+      rate: config.sellAllPrice
+    }
+    logger.info(`SELL ALL: ${JSON.stringify(options)}`);
+    bittrex.selllimit(options, (data, err) => {
+      if (err) {
+        logger.error(err);
+        return;
+      }
+      step = Steps.END;
+    })
   }
-  logger.info(`SELL ALL: ${JSON.stringify(options)}`);
-  bittrex.selllimit(options, (data, err) => {
+}
+
+// ---------------------------------------------------------------------------------------------------------------------
+
+const bookOrderTrailingStop = () => {
+  const options = {
+    MarketName: config.market,
+    OrderType: 'LIMIT',
+    Quantity: config.amount,
+    Rate: (stopPrice - config.trailingStopLimitDistance),
+    TimeInEffect: 'GOOD_TIL_CANCELLED', // supported options are 'IMMEDIATE_OR_CANCEL', 'GOOD_TIL_CANCELLED', 'FILL_OR_KILL'
+    ConditionType: 'LESS_THAN', // supported options are 'NONE', 'GREATER_THAN', 'LESS_THAN'
+    Target: stopPrice, // used in conjunction with ConditionType
+  };
+  logger.info(`BOOK ORDER TRAILING STOP: ${JSON.stringify(options)}`);
+  bittrex.tradebuy(options, (data, err) => {
     if (err) {
       logger.error(err);
       return;
     }
-    step = Steps.END;
-  })
+    curTrailingStopOrderId = result.uuid;
+    logger.info(`BOOK ORDER TRAILING STOP SUCCESSFUL WITH ID: ${result.uuid}`);
+  });
+}
+
+const cancelOrderTrailingStop = (done) => {
+  if (!curTrailingStopOrderId) {
+    done();
+    return;
+  }
+  const options = {
+    uuid: curTrailingStopOrderId
+  };
+  logger.info(`CANCEL ORDER TRAILING STOP: ${JSON.stringify(options)}`);
+  bittrex.cancel(options, (data, err) => {
+    if (err) {
+      logger.error(err);
+      return;
+    }
+    if (!data.success) {
+      return;
+    }
+    curTrailingStopOrderId = null;
+    done();
+  });
 }
