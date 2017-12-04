@@ -3,7 +3,8 @@ const constants = require('./constants');
 module.exports = {
   defaultStep: constants.steps.BUY_FILLED,
   market: 'BTC-BLK',
-  buyPrice: 11091,
+  buyStopPrice:               10478, // when market price is below this price, buying is triggered
+  buyLimitPrice:              11091, // buy at this price, when buying is triggered
   amount: 40,
   stopLossPrice:              0.000028, // OPTIONAL, stop loss is triggered at this price
   stopLossLimitPrice:         0.0000275, // OPTIONAL, sell at this price when stop loss is triggered

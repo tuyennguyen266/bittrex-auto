@@ -36,7 +36,7 @@ setInterval(() => {
 
 const handleTicker = (lastPrice) => {
   logger.info(`PRICE: ${lastPrice}`);
-  if (shouldBuy()) {
+  if (shouldBuy(lastPrice)) {
     buy();
     return;
   }
@@ -67,11 +67,14 @@ const handleTicker = (lastPrice) => {
 
 // ---------------------------------------------------------------------------------------------------------------------
 
-const shouldBuy = () => {
+const shouldBuy = (price) => {
   if (step !== Steps.START) {
     return false;
   }
-  return true;
+  if (!config.buyStopPrice) {
+    return true;
+  }
+  return price <= config.buyStopPrice;
 }
 
 const shouldMarkBuyFilled = (price) => {
@@ -79,7 +82,7 @@ const shouldMarkBuyFilled = (price) => {
   if (step !== Steps.BOUGHT) {
     return false;
   }
-  return price < config.buyPrice;
+  return price < config.buyLimitPrice;
 }
 
 const shouldStopLoss = (price) => {
@@ -126,7 +129,7 @@ const buy = () => {
   const options = {
     market: config.market,
     quantity: config.amount,
-    rate: config.buyPrice
+    rate: config.buyLimitPrice
   };
   logger.info(`BUY: ${JSON.stringify(options)}`);
   bittrex.buylimit(options, (data, err) => {
