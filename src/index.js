@@ -216,7 +216,7 @@ const bookOrderTrailingStop = () => {
     Target: stopPrice, // used in conjunction with ConditionType
   };
   logger.info(`BOOK ORDER TRAILING STOP: ${JSON.stringify(options)}`);
-  bittrex.tradebuy(options, (data, err) => {
+  bittrex.tradesell(options, (data, err) => {
     if (err) {
       logger.error(err);
       return;
