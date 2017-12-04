@@ -19,6 +19,9 @@ var curTrailingStopOrderId = null;
 
 
 setInterval(() => {
+  if (step === Steps.END) {
+    return;
+  }
   bittrex.getticker( { market : config.market }, function( data, err ) {
     if (err) {
       logger.error(err);
