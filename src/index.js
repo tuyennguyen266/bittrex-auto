@@ -221,7 +221,7 @@ const bookOrderTrailingStop = () => {
       logger.error(err);
       return;
     }
-    curTrailingStopOrderId = result.uuid;
+    curTrailingStopOrderId = data.result.uuid;
     logger.info(`BOOK ORDER TRAILING STOP SUCCESSFUL WITH ID: ${result.uuid}`);
   });
 }
