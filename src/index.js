@@ -110,7 +110,13 @@ const shouldSetNewTrailingStop = (price) => {
   if (step !== Steps.TRAILING_STOP) {
     return false;
   }
-  return price > stopPrice + config.trailingStopDistance;
+  if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_AMOUNT_DISTANCE) {
+    return price > stopPrice + config.trailingStopDistance;
+  }
+  if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_PERCENTAGE_PERCENTAGE_DISTANCE) {
+    return price * (1 - config.trailingStopPercentageDistance) > stopPrice;
+  }
+  return false;
 }
 
 const shouldTrailingStop = (price) => {
@@ -167,18 +173,32 @@ const stopLoss = () => {
 }
 
 const triggerTrailingStop = (price) => {
-  stopPrice = price - config.trailingStopDistance;
+  stopPrice = getStopPrice(price);
+  if (!stopPrice) return;
+
   step = Steps.TRAILING_STOP;
   bookOrderTrailingStop();
   logger.info(`TRIGGER TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
 const setNewTrailingStop = (price) => {
-  stopPrice = price - config.trailingStopDistance;
+  stopPrice = getStopPrice(price);
+  if (!stopPrice) return;
+
   cancelOrderTrailingStop(() => {
     bookOrderTrailingStop();
   });
   logger.info(`SET NEW TRAILING STOP AT PRICE: ${stopPrice}`);
+}
+
+const getStopPrice = (marketPrice) => {
+  if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_AMOUNT_DISTANCE) {
+    return price - config.trailingStopDistance;
+  }
+  if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_PERCENTAGE_PERCENTAGE_DISTANCE) {
+    return price * (1 - config.trailingStopPercentageDistance);
+  }
+  return null;
 }
 
 const trailingStop = (price) => {
@@ -206,11 +226,14 @@ const sellAll = () => {
 // ---------------------------------------------------------------------------------------------------------------------
 
 const bookOrderTrailingStop = () => {
+  const trailingStopLimitPrice = getTrailingStopLimitPrice();
+  if (!trailingStopLimitPrice) return;
+
   const options = {
     MarketName: config.market,
     OrderType: 'LIMIT',
     Quantity: config.amount,
-    Rate: (stopPrice - config.trailingStopLimitDistance),
+    Rate: trailingStopLimitPrice,
     TimeInEffect: 'GOOD_TIL_CANCELLED', // supported options are 'IMMEDIATE_OR_CANCEL', 'GOOD_TIL_CANCELLED', 'FILL_OR_KILL'
     ConditionType: 'LESS_THAN', // supported options are 'NONE', 'GREATER_THAN', 'LESS_THAN'
     Target: stopPrice, // used in conjunction with ConditionType
@@ -224,6 +247,16 @@ const bookOrderTrailingStop = () => {
     curTrailingStopOrderId = data.result.OrderId;
     logger.info(`BOOK ORDER TRAILING STOP SUCCESSFUL WITH ID: ${data.result.OrderId}`);
   });
+}
+
+const getTrailingStopLimitPrice = () => {
+  if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_AMOUNT_DISTANCE) {
+    return stopPrice - config.trailingStopLimitDistance;
+  }
+  if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_PERCENTAGE_PERCENTAGE_DISTANCE) {
+    return stopPrice * (1 - config.trailingStopPercentageLimit);
+  }
+  return null;
 }
 
 const cancelOrderTrailingStop = (done) => {

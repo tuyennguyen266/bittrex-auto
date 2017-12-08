@@ -6,6 +6,12 @@ const steps = {
   END: 100
 }
 
+const trailingStopStrategies = {
+  BY_AMOUNT_DISTANCE: 0,
+  BY_PERCENTAGE_PERCENTAGE_DISTANCE: 0
+}
+
 module.exports = {
-  steps
+  steps,
+  trailingStopStrategies
 }
