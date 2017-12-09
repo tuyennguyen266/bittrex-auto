@@ -21,7 +21,7 @@ module.exports = {
 
   // BY_PERCENTAGE_PERCENTAGE_DISTANCE
   trailingStopPercentageDistance: 0.01, // 1%: distance of trailing stop by percentage
-  trailingStopPercentageLimit:    0.01, // 1%:
+  trailingStopPercentageLimit:    0.01, // 1%: percentage from hit point
 
   sellAllPrice:               0.0000337 // sell all when hit this price
 }
