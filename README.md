@@ -34,32 +34,44 @@ Change fields in src/config.js to your trading expected pair.
   // Buy at this price, when buying is triggered.
   // It isn't used when defaultStep = constants.steps.BUY_FILLED.
   
-  amount: 40,
+  amount:                     40,
   // The amount will be put in all orders
   // In this config, this amount is 40 BLK.
+  
   
   stopLossPrice:              0.000028, 
   // OPTIONAL, stop loss is triggered at this price.
   // Set 'null' will disable stop loss.
   // In this config, when price from 0.000029 down to 000028,
   // a selling order will be created with limit price = 0.0000275.
-  
+ 
   stopLossLimitPrice:         0.0000275, 
   // OPTIONAL, sell at this price when stop loss is triggered.
   // In this config, when market price goes from 0.000029 down to 000028,
   // a selling order will be booked with limit price = 0.0000275.
   
+  trailingStopStrategy:       constants.trailingStopStrategies.BY_PERCENTAGE_PERCENTAGE_DISTANCE,
+  // [BY_AMOUNT_DISTANCE, BY_PERCENTAGE_PERCENTAGE_DISTANCE]
+  // BY_AMOUNT_DISTANCE: use trailingStopDistance, trailingStopLimitDistance
+  // BY_PERCENTAGE_PERCENTAGE_DISTANCE: trailingStopPercentageDistance, trailingStopPercentageLimit
+  
   trailingStopPrice:          0.0000327, 
   // Trailing stop is triggered at this price.
   // When market price reaches this price, tool will create a conditional selling order.
   
+  
+  // trailingStopStrategies: BY_AMOUNT_DISTANCE
   trailingStopDistance:       0.0000005, 
   // Distance of trailing stop
-  
+    
   trailingStopLimitDistance:  0.0000002, 
   // When trailing stop is hit, sell at this distance price from the hit point
+    
+  // trailingStopStrategies: BY_PERCENTAGE_PERCENTAGE_DISTANCE
+  trailingStopPercentageDistance: 0.01, // 1%
+  trailingStopPercentageLimit:    0.01, // 1%
   
-  // In this config, when market price goes from 0.000032 up to 0.0000327,
+    // In this config, when market price goes from 0.000032 up to 0.0000327,
   // a selling order will be created with condition 'PRICE' < 0.0000322 (0.0000327-0.0000005) and limit price = 000032 (0.0000327-0.0000005-0.0000002).
   // When market price continue go higher from 0.0000327 to 0.0000337, the old selling order will be canceled,
   // and new selling order will be created with condition 'PRICE' < 0.0000332 (0.0000337-0.0000005) and limit price = 000033 (0.0000337-0.0000005-0.0000002).
