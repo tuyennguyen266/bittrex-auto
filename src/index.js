@@ -191,7 +191,7 @@ const setNewTrailingStop = (price) => {
   logger.info(`SET NEW TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
-const getStopPrice = (marketPrice) => {
+const getStopPrice = (price) => {
   if (config.trailingStopStrategy === constants.trailingStopStrategies.BY_AMOUNT_DISTANCE) {
     return price - config.trailingStopDistance;
   }
