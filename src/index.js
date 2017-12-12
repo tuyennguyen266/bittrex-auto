@@ -16,6 +16,7 @@ const Steps = constants.steps;
 var step = config.defaultStep;
 var stopPrice = config.trailingStopPrice;
 var curTrailingStopOrderId = null;
+var stopLossOrderId = null;
 
 
 setInterval(() => {
@@ -48,9 +49,8 @@ const handleTicker = (lastPrice) => {
     markBuyFilled();
     return;
   }
-  if (shouldStopLoss(lastPrice)) {
-    stopLoss();
-    return;
+  if (shouldSetStopLoss(lastPrice)) {
+    setStopLoss();
   }
   if (shouldTriggerTrailingStop(lastPrice)) {
     triggerTrailingStop(lastPrice);
@@ -89,14 +89,17 @@ const shouldMarkBuyFilled = (price) => {
   return price < config.buyLimitPrice;
 }
 
-const shouldStopLoss = (price) => {
+const shouldSetStopLoss = (price) => {
   if (step !== Steps.BUY_FILLED) {
     return false;
   }
   if (!config.stopLossPrice) {
     return false;
   }
-  return price <= config.stopLossPrice;
+  if (stopLossOrderId) { // already set stop loss
+    return false;
+  }
+  return true;
 }
 
 const shouldTriggerTrailingStop = (price) => {
@@ -156,20 +159,25 @@ const markBuyFilled = () => {
   step = Steps.BUY_FILLED;
 }
 
-const stopLoss = () => {
+const setStopLoss = () => {
   const options = {
-    market: config.market,
-    quantity: config.amount,
-    rate: config.stopLossLimitPrice
-  }
+    MarketName: config.market,
+    OrderType: 'LIMIT',
+    Quantity: config.amount,
+    Rate: config.stopLossLimitPrice,
+    TimeInEffect: 'GOOD_TIL_CANCELLED', // supported options are 'IMMEDIATE_OR_CANCEL', 'GOOD_TIL_CANCELLED', 'FILL_OR_KILL'
+    ConditionType: 'LESS_THAN', // supported options are 'NONE', 'GREATER_THAN', 'LESS_THAN'
+    Target: config.stopLossPrice, // used in conjunction with ConditionType
+  };
   logger.info(`STOP LOSS: ${JSON.stringify(options)}`);
-  bittrex.selllimit(options, (data, err) => {
+  bittrex.tradesell(options, (data, err) => {
     if (err) {
       logger.error(err);
       return;
     }
-    step = Steps.END;
-  })
+    stopLossOrderId = data.result.OrderId;
+    logger.info(`BOOK ORDER STOP LOSS SUCCESSFUL WITH ID: ${data.result.OrderId}`);
+  });
 }
 
 const triggerTrailingStop = (price) => {
@@ -177,7 +185,9 @@ const triggerTrailingStop = (price) => {
   if (!stopPrice) return;
 
   step = Steps.TRAILING_STOP;
-  bookOrderTrailingStop();
+  cancelOrderStopLoss(() => {
+    bookOrderTrailingStop();
+  });
   logger.info(`TRIGGER TRAILING STOP AT PRICE: ${stopPrice}`);
 }
 
@@ -277,6 +287,28 @@ const cancelOrderTrailingStop = (done) => {
       return;
     }
     curTrailingStopOrderId = null;
+    done();
+  });
+}
+
+const cancelOrderStopLoss = (done) => {
+  if (!stopLossOrderId) {
+    done();
+    return;
+  }
+  const options = {
+    uuid: stopLossOrderId
+  };
+  logger.info(`CANCEL ORDER STOP LOSS: ${JSON.stringify(options)}`);
+  bittrex.cancel(options, (data, err) => {
+    if (err) {
+      logger.error(err);
+      return;
+    }
+    if (!data.success) {
+      return;
+    }
+    stopLossOrderId = null;
     done();
   });
 }
